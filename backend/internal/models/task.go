@@ -37,8 +37,6 @@ type Task struct {
 
 	Priority TaskPriority `gorm:"type:varchar(20);default:'medium'"`
 
-	StoryPoints int
-
 	EstimatedHours int
 
 	RemainingHours int

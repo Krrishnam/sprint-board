@@ -7,19 +7,13 @@ import(
 )
 
 type CreateTaskRequest struct {
-	TaskNumber      string `json:"task_number" binding:"required"`
 	Title           string `json:"title" binding:"required"`
 	Description     string `json:"description"`
-
 	Status          string `json:"status"`
 	Priority        string `json:"priority"`
-
-	StoryPoints     int    `json:"story_points"`
 	EstimatedHours  int    `json:"estimated_hours"`
 	RemainingHours  int    `json:"remaining_hours"`
-
 	DueDate         string `json:"due_date"`
-
 	ProjectID       string `json:"project_id" binding:"required"`
 	SprintID        string `json:"sprint_id" binding:"required"`
 	AssigneeID      string `json:"assignee_id"`
@@ -31,7 +25,6 @@ type UpdateTaskRequest struct {
     Description     *string         `json:"description"`
     Status          *models.TaskStatus   `json:"status"`
     Priority        *models.TaskPriority  `json:"priority"`
-    StoryPoints     *int            `json:"story_points"`
     EstimatedHours  *int            `json:"estimated_hours"`
     RemainingHours  *int            `json:"remaining_hours"`
     DueDate         *time.Time      `json:"due_date"`

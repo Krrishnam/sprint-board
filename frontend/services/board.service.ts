@@ -50,12 +50,7 @@ export const getBoard = async (
         task.Priority ??
         "medium",
 
-      // Numbers
-      story_points:
-        task.story_points ??
-        task.StoryPoints ??
-        0,
-
+      
       estimated_hours:
         task.estimated_hours ??
         task.EstimatedHours ??

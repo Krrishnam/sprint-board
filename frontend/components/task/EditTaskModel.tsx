@@ -60,9 +60,6 @@ export default function EditTaskModal({
   const [priority, setPriority] =
     useState<TaskPriority>(task.priority);
 
-  const [storyPoints, setStoryPoints] =
-    useState(task.story_points);
-
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (
@@ -83,7 +80,6 @@ export default function EditTaskModal({
         description: description.trim(),
         status,
         priority,
-        story_points: storyPoints,
       });
     } finally {
       setSaving(false);
@@ -199,19 +195,11 @@ export default function EditTaskModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-              Story Points
-            </label>
+            
 
             <input
               type="number"
               min={0}
-              value={storyPoints}
-              onChange={(e) =>
-                setStoryPoints(
-                  Number(e.target.value)
-                )
-              }
               className="w-full rounded-lg border border-slate-300 px-3 py-2"
             />
           </div>

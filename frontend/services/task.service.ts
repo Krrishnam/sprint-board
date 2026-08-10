@@ -23,7 +23,6 @@ export const getTasks = async (): Promise<Task[]> => {
     status: task.status ?? task.Status,
     priority: task.priority ?? task.Priority,
 
-    story_points: task.story_points ?? task.StoryPoints ?? 0,
     estimated_hours:
       task.estimated_hours ?? task.EstimatedHours ?? 0,
     remaining_hours:

@@ -23,7 +23,6 @@ export default function CreateTaskModal({
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [status, setStatus] = useState<TaskStatus>("todo");
-  const [storyPoints, setStoryPoints] = useState(1);
   const [estimatedHours, setEstimatedHours] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -40,15 +39,12 @@ export default function CreateTaskModal({
       setLoading(true);
       setError("");
 
-      const taskNumber = `SB-${Date.now().toString().slice(-6)}`;
 
       const data: CreateTaskRequest = {
-        task_number: taskNumber,
         title: title.trim(),
         description: description.trim(),
         status,
         priority,
-        story_points: storyPoints,
         estimated_hours: estimatedHours,
         remaining_hours: estimatedHours,
         project_id: projectId,
@@ -162,41 +158,6 @@ export default function CreateTaskModal({
                 <option value="high">High</option>
                 <option value="critical">Critical</option>
               </select>
-            </div>
-          </div>
-
-          {/* Story points + hours */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Story Points
-              </label>
-
-              <input
-                type="number"
-                min={0}
-                value={storyPoints}
-                onChange={(e) =>
-                  setStoryPoints(Number(e.target.value))
-                }
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Estimated Hours
-              </label>
-
-              <input
-                type="number"
-                min={0}
-                value={estimatedHours}
-                onChange={(e) =>
-                  setEstimatedHours(Number(e.target.value))
-                }
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
             </div>
           </div>
 

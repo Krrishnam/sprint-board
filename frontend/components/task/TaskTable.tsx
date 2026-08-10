@@ -41,11 +41,7 @@ export default function TaskTable({
               <th className="px-5 py-4 text-xs font-semibold uppercase text-slate-500">
                 Priority
               </th>
-
-              <th className="px-5 py-4 text-xs font-semibold uppercase text-slate-500">
-                Story Points
-              </th>
-
+              
               <th className="px-5 py-4 text-xs font-semibold uppercase text-slate-500">
                 Assignee
               </th>
@@ -88,10 +84,6 @@ export default function TaskTable({
                   <span className="text-sm font-medium capitalize text-slate-700">
                     {task.priority}
                   </span>
-                </td>
-
-                <td className="px-5 py-4 text-sm text-slate-600">
-                  {task.story_points}
                 </td>
 
                 <td className="px-5 py-4">
