@@ -1,15 +1,16 @@
 package routes
 
 import (
+	"github.com/Krrishnam/sprint-board/backend/internal/config"
 	"github.com/Krrishnam/sprint-board/backend/internal/database"
 	"github.com/Krrishnam/sprint-board/backend/internal/handlers"
+	"github.com/Krrishnam/sprint-board/backend/internal/middleware"
 	"github.com/Krrishnam/sprint-board/backend/internal/repositories"
 	"github.com/Krrishnam/sprint-board/backend/internal/services"
-
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterTaskRoutes(router *gin.RouterGroup) {
+func RegisterTaskRoutes(router *gin.RouterGroup, cfg *config.Config) {
 
 	taskRepo := repositories.NewTaskRepository(database.DB)
 	projectRepo := repositories.NewProjectRepository(database.DB)
@@ -26,6 +27,10 @@ func RegisterTaskRoutes(router *gin.RouterGroup) {
 	taskHandler := handlers.NewTaskHandler(taskService)
 
 	tasks := router.Group("/tasks")
+
+	// Protect all task routes with JWT authentication
+	tasks.Use(middleware.JWTAuthMiddleware(cfg))
+
 	{
 		tasks.POST("", taskHandler.CreateTask)
 		tasks.GET("", taskHandler.GetTasks)

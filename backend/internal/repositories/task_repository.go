@@ -79,6 +79,24 @@ func (r *TaskRepository) CountByStatus(status models.TaskStatus) (int64, error) 
 	return count, err
 }
 
+func (r *TaskRepository) GetAllByUser(userID string) ([]models.Task, error) {
+	var tasks []models.Task
+
+	err := r.db.
+		Preload("Project").
+		Preload("Sprint").
+		Preload("Assignee").
+		Preload("CreatedBy").
+		Where("created_by_id = ?", userID).
+		Find(&tasks).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
 // Get Active
 func (r *SprintRepository) GetActive() (*models.Sprint, error) {
 	var sprint models.Sprint
@@ -142,10 +160,7 @@ func (r *TaskRepository) UpdateStatus(id string, status string) error {
 		Update("status", status).
 		Error
 }
-// Delete Task
-// func (r *TaskRepository) Delete(task *models.Task) error {
-// 	return r.db.Delete(task).Error
-// }
+
 func (r *TaskRepository) Delete(id string) error {
 	return r.db.Delete(&models.Task{}, "id = ?", id).Error
 }

@@ -1,4 +1,5 @@
 export type TaskStatus =
+  | "pending"
   | "todo"
   | "committed"
   | "active"

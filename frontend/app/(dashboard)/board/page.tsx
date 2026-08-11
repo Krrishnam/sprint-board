@@ -13,9 +13,14 @@ import ProtectedRoute from "@/components/auth/ProtectedRoutes";
 import CreateTaskModule from "@/components/board/CreateTaskModule";
 
 import { getBoard } from "@/services/board.service";
-import { updateTaskStatus } from "@/services/task.service";
+import {
+  getTasks,
+  updateTaskStatus,
+} from "@/services/task.service";
 
 import { useAuth } from "@/context/Authcontext";
+
+import api from "@/lib/axios";
 
 import { BoardData } from "@/types/board";
 import {
@@ -52,20 +57,51 @@ const columns = [
 
 type ColumnKey = (typeof columns)[number]["key"];
 
-// BOARD CONTENT
+type Project = {
+  id: string;
+  name: string;
+  team_id: string;
+};
+
+type Team = {
+  id: string;
+  name: string;
+};
+
+function createEmptyBoard(): BoardData {
+  return {
+    project_id: "",
+    todo: [],
+    committed: [],
+    active: [],
+    in_progress: [],
+    in_review: [],
+    done: [],
+  };
+}
+
 function BoardContent() {
   const searchParams = useSearchParams();
+
   const sprintId = searchParams.get("sprintId");
+  const teamId = searchParams.get("teamId");
 
   const { user } = useAuth();
 
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] =
+    useState(false);
 
-  const [board, setBoard] = useState<BoardData | null>(null);
+  const [board, setBoard] =
+    useState<BoardData | null>(null);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [error, setError] = useState("");
+  const [error, setError] =
+    useState("");
+
+  const [team, setTeam] =
+    useState<Team | null>(null);
 
   const [draggedTask, setDraggedTask] =
     useState<Task | null>(null);
@@ -73,24 +109,143 @@ function BoardContent() {
   const [dragOverColumn, setDragOverColumn] =
     useState<ColumnKey | null>(null);
 
- // Load Board
+  /*
+   * LOAD BOARD
+   *
+   * Two modes:
+   *
+   * 1. sprintId exists
+   *    → existing sprint board
+   *
+   * 2. teamId exists
+   *    → show only tasks belonging to that team
+   */
   useEffect(() => {
-    if (!sprintId) {
-      setError("Sprint ID is missing");
-      setLoading(false);
-      return;
-    }
-
     const loadBoard = async () => {
       try {
         setLoading(true);
         setError("");
 
-        const data = await getBoard(sprintId);
+        /*
+         * EXISTING SPRINT BOARD
+         */
+        if (sprintId) {
+          const data = await getBoard(sprintId);
 
-        setBoard(data);
+          setBoard(data);
+
+          return;
+        }
+
+        /*
+         * TEAM BOARD
+         */
+        if (teamId) {
+          const [
+            teamsResponse,
+            projectsResponse,
+            tasks,
+          ] = await Promise.all([
+            api.get("/teams"),
+            api.get("/projects"),
+            getTasks(),
+          ]);
+
+          const teamsData = teamsResponse.data;
+
+          const projectsData = projectsResponse.data;
+
+          const selectedTeam = teamsData.find(
+            (item: any) =>
+              (item.id ?? item.ID) === teamId
+          );
+
+          if (!selectedTeam) {
+            setError("Team not found.");
+            return;
+          }
+
+          setTeam({
+            id: selectedTeam.id ?? selectedTeam.ID,
+            name:
+              selectedTeam.name ??
+              selectedTeam.Name,
+          });
+
+          /*
+           * Projects belonging to selected team
+           */
+          const teamProjects: Project[] =
+            projectsData
+              .map((project: any) => ({
+                id:
+                  project.id ??
+                  project.ID,
+
+                name:
+                  project.name ??
+                  project.Name,
+
+                team_id:
+                  project.team_id ??
+                  project.TeamID,
+              }))
+              .filter(
+                (project: Project) =>
+                  project.team_id === teamId
+              );
+
+          const teamProjectIds =
+            new Set(
+              teamProjects.map(
+                (project) => project.id
+              )
+            );
+
+          /*
+           * Only tasks whose project belongs
+           * to selected team.
+           */
+          const teamTasks = tasks.filter(
+            (task) =>
+              task.project_id &&
+              teamProjectIds.has(
+                task.project_id
+              )
+          );
+
+          const teamBoard = createEmptyBoard();
+
+          teamTasks.forEach((task) => {
+            const status =
+              task.status as ColumnKey;
+
+            if (
+              status in teamBoard &&
+              Array.isArray(
+                teamBoard[status]
+              )
+            ) {
+              teamBoard[status].push(task);
+            }
+          });
+
+          setBoard(teamBoard);
+
+          return;
+        }
+
+        /*
+         * Nothing selected
+         */
+        setError(
+          "Please select a team or sprint."
+        );
       } catch (err) {
-        console.error("Failed to load board:", err);
+        console.error(
+          "Failed to load board:",
+          err
+        );
 
         setError("Failed to load board");
       } finally {
@@ -99,16 +254,19 @@ function BoardContent() {
     };
 
     loadBoard();
-  }, [sprintId]);
+  }, [sprintId, teamId]);
 
- // Drag start
+  /*
+   * DRAG START
+   */
   const handleDragStart = (
     event: DragEvent<HTMLDivElement>,
     task: Task
   ) => {
     setDraggedTask(task);
 
-    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.effectAllowed =
+      "move";
 
     event.dataTransfer.setData(
       "text/plain",
@@ -116,24 +274,31 @@ function BoardContent() {
     );
   };
 
-  // Drag Over
+  /*
+   * DRAG OVER
+   */
   const handleDragOver = (
     event: DragEvent<HTMLDivElement>,
     column: ColumnKey
   ) => {
     event.preventDefault();
 
-    event.dataTransfer.dropEffect = "move";
+    event.dataTransfer.dropEffect =
+      "move";
 
     setDragOverColumn(column);
   };
 
-  // drag Leave
+  /*
+   * DRAG LEAVE
+   */
   const handleDragLeave = () => {
     setDragOverColumn(null);
   };
 
-  //Drop
+  /*
+   * DROP
+   */
   const handleDrop = async (
     event: DragEvent<HTMLDivElement>,
     destination: ColumnKey
@@ -146,25 +311,23 @@ function BoardContent() {
       return;
     }
 
-    const currentStatus = draggedTask.status;
+    const currentStatus =
+      draggedTask.status;
 
-    const newStatus = destination as TaskStatus;
+    const newStatus =
+      destination as TaskStatus;
 
-    // Don't call API if task is dropped
-    // into the same column.
     if (currentStatus === newStatus) {
       setDraggedTask(null);
       return;
     }
 
     try {
-      // Update backend
       await updateTaskStatus(
         draggedTask.id,
         newStatus
       );
 
-      // Update frontend immediately
       setBoard((previousBoard) => {
         if (!previousBoard) {
           return previousBoard;
@@ -176,9 +339,12 @@ function BoardContent() {
         };
 
         const updatedBoard: BoardData = {
-          project_id: previousBoard.project_id,
+          project_id:
+            previousBoard.project_id,
 
-          todo: [...previousBoard.todo],
+          todo: [
+            ...previousBoard.todo,
+          ],
 
           committed: [
             ...previousBoard.committed,
@@ -210,16 +376,21 @@ function BoardContent() {
           "done",
         ];
 
-        // Remove task from every column
+        /*
+         * Remove task from old column
+         */
         taskColumns.forEach((key) => {
           updatedBoard[key] =
             updatedBoard[key].filter(
               (task) =>
-                task.id !== draggedTask.id
+                task.id !==
+                draggedTask.id
             );
         });
 
-        // Add task to destination column
+        /*
+         * Add task to new column
+         */
         updatedBoard[destination].push(
           updatedTask
         );
@@ -240,8 +411,9 @@ function BoardContent() {
     }
   };
 
-
-  // Loading
+  /*
+   * LOADING
+   */
   if (loading) {
     return (
       <main className="min-h-screen bg-slate-50 p-6">
@@ -252,7 +424,9 @@ function BoardContent() {
     );
   }
 
- // Error
+  /*
+   * ERROR
+   */
   if (error) {
     return (
       <main className="min-h-screen bg-slate-50 p-6">
@@ -267,7 +441,9 @@ function BoardContent() {
     return null;
   }
 
-  // Project Id
+  /*
+   * PROJECT ID
+   */
   const projectId =
     board.project_id ||
     columns
@@ -280,34 +456,42 @@ function BoardContent() {
       )?.project_id ||
     "";
 
-  // Main UI
   return (
     <main className="min-h-screen bg-slate-50 p-6">
 
-      {/* Header */}
+      {/* HEADER */}
       <div className="mb-6 flex items-center justify-between">
+
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
-            Sprint Board
+            {team
+              ? `${team.name} Sprint Board`
+              : "Sprint Board"}
           </h1>
 
           <p className="mt-1 text-sm text-slate-500">
-            Manage and track your sprint tasks
+            {team
+              ? `Tasks for ${team.name}`
+              : "Manage and track your sprint tasks"}
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() =>
-            setShowCreateModal(true)
-          }
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-        >
-          + Create Task
-        </button>
+        {/* Create task only for a real sprint board */}
+        {sprintId &&
+          user?.id && (
+            <button
+              type="button"
+              onClick={() =>
+                setShowCreateModal(true)
+              }
+              className="cursor-pointer rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            >
+              + Create Task
+            </button>
+          )}
       </div>
 
-      {/* Board */}
+      {/* BOARD */}
       <div className="flex gap-4 overflow-x-auto pb-6">
 
         {columns.map((column) => {
@@ -315,7 +499,8 @@ function BoardContent() {
             board[column.key] ?? [];
 
           const isDragOver =
-            dragOverColumn === column.key;
+            dragOverColumn ===
+            column.key;
 
           return (
             <div
@@ -323,7 +508,7 @@ function BoardContent() {
               className="w-[280px] min-w-[280px]"
             >
 
-              {/* Column Header */}
+              {/* COLUMN HEADER */}
               <div className="mb-3 flex items-center justify-between">
 
                 <h2 className="font-semibold text-slate-800">
@@ -336,7 +521,7 @@ function BoardContent() {
 
               </div>
 
-              {/* Drop Zone */}
+              {/* DROP ZONE */}
               <div
                 onDragOver={(event) =>
                   handleDragOver(
@@ -392,16 +577,13 @@ function BoardContent() {
                   )}
 
                 </div>
-
               </div>
-
             </div>
           );
         })}
-
       </div>
 
-      {/* Create Task Modal */}
+      {/* CREATE TASK */}
       {showCreateModal &&
         sprintId &&
         user?.id && (
@@ -436,7 +618,9 @@ function BoardContent() {
   );
 }
 
-// Page
+/*
+ * PAGE
+ */
 export default function BoardPage() {
   return (
     <ProtectedRoute>
@@ -455,7 +639,9 @@ export default function BoardPage() {
   );
 }
 
-// Task card
+/*
+ * TASK CARD
+ */
 function TaskCard({
   task,
   onDragStart,
@@ -487,32 +673,32 @@ function TaskCard({
       "
     >
 
-      {/* Task Number */}
+      {/* TASK NUMBER */}
       <p className="text-xs font-medium text-slate-400">
         {task.task_number}
       </p>
 
-      {/* Title */}
+      {/* TITLE */}
       <h3 className="mt-1 font-semibold text-slate-800">
         {task.title}
       </h3>
 
-      {/* Description */}
+      {/* DESCRIPTION */}
       {task.description && (
         <p className="mt-2 line-clamp-2 text-sm text-slate-500">
           {task.description}
         </p>
       )}
 
-      {/* Bottom */}
+      {/* BOTTOM */}
       <div className="mt-4 flex items-center justify-between">
 
-        {/* Priority */}
+        {/* PRIORITY */}
         <span className="rounded-full bg-slate-100 px-2 py-1 text-xs capitalize">
           {task.priority}
         </span>
 
-        {/* Assignee */}
+        {/* ASSIGNEE */}
         {task.assignee?.name && (
           <div
             className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-medium text-white"
@@ -525,7 +711,6 @@ function TaskCard({
         )}
 
       </div>
-
     </div>
   );
 }

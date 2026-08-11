@@ -35,155 +35,6 @@ func NewTaskService(
 	}
 }
 
-
-// CREATE TASK
-// func (s *TaskService) CreateTask(req dto.CreateTaskRequest) error {
-
-// 	// Check duplicate task number
-// 	_, err := s.taskRepo.GetByTaskNumber(req.TaskNumber)
-
-// 	if err == nil {
-// 		return errors.New("task number already exists")
-// 	}
-
-// 	// Check project exists
-// 	_, err = s.projectRepo.GetByID(req.ProjectID)
-
-// 	if err != nil {
-// 		return errors.New("project not found")
-// 	}
-
-// 	// Check sprint exists
-// 	_, err = s.sprintRepo.GetByID(req.SprintID)
-
-// 	if err != nil {
-// 		return errors.New("sprint not found")
-// 	}
-
-// 	// Check creator exists
-// 	_, err = s.userRepo.GetByID(req.CreatedByID)
-
-// 	if err != nil {
-// 		return errors.New("creator not found")
-// 	}
-
-// 	// Parse UUIDs
-// 	projectID, err := uuid.Parse(req.ProjectID)
-
-// 	if err != nil {
-// 		return errors.New("invalid project id")
-// 	}
-
-// 	sprintID, err := uuid.Parse(req.SprintID)
-
-// 	if err != nil {
-// 		return errors.New("invalid sprint id")
-// 	}
-
-// 	createdByID, err := uuid.Parse(req.CreatedByID)
-
-// 	if err != nil {
-// 		return errors.New("invalid creator id")
-// 	}
-
-// 	//  Assignee
-// 	// var assigneeID uuid.UUID
-
-// 	// if req.AssigneeID != "" {
-
-// 	// 	_, err := s.userRepo.GetByID(req.AssigneeID)
-
-// 	// 	if err != nil {
-// 	// 		return errors.New("assignee not found")
-// 	// 	}
-
-// 	// 	assigneeID, err = uuid.Parse(req.AssigneeID)
-
-// 	// 	if err != nil {
-// 	// 		return errors.New("invalid assignee id")
-// 	// 	}
-// 	// }
-
-// 	// Due Date
-// 	var dueDate *time.Time
-
-// 	if req.DueDate != "" {
-
-// 		date, err := time.Parse(
-// 			"2006-01-02",
-// 			req.DueDate,
-// 		)
-
-// 		if err != nil {
-// 			return errors.New("invalid due date")
-// 		}
-
-// 		dueDate = &date
-// 	}
-
-// 	// Status
-// 	status := models.TaskTodo
-
-// 	if req.Status != "" {
-
-// 		switch req.Status {
-
-// 		case "todo",
-// 			"committed",
-// 			"active",
-// 			"in_progress",
-// 			"in_review",
-// 			"done":
-
-// 			status = models.TaskStatus(req.Status)
-
-// 		default:
-// 			return errors.New("invalid task status")
-// 		}
-// 	}
-
-// 	// Priority
-// 	priority := models.PriorityMedium
-
-// 	if req.Priority != "" {
-
-// 		switch req.Priority {
-
-// 		case "low",
-// 			"medium",
-// 			"high",
-// 			"critical":
-
-// 			priority = models.TaskPriority(req.Priority)
-
-// 		default:
-// 			return errors.New("invalid priority")
-// 		}
-// 	}
-
-// 	// Create task model
-// 	task := models.Task{
-// 		TaskNumber: req.TaskNumber,
-// 		Title:      req.Title,
-// 		Description: req.Description,
-
-// 		Status:   status,
-// 		Priority: priority,
-
-// 		EstimatedHours:  req.EstimatedHours,
-// 		RemainingHours:  req.RemainingHours,
-
-// 		DueDate: dueDate,
-
-// 		ProjectID:   projectID,
-// 		SprintID:    sprintID,
-// 		CreatedByID: createdByID,
-// 		// AssigneeID: assigneeID,
-// 	}
-
-// 	return s.taskRepo.Create(&task)
-// }
-
 // CREATE TASK
 func (s *TaskService) CreateTask(req dto.CreateTaskRequest) error {
 
@@ -330,10 +181,9 @@ func (s *TaskService) CreateTask(req dto.CreateTaskRequest) error {
 }
 
 // GET ALL TASKS
-func (s *TaskService) GetAllTasks() ([]models.Task, error) {
-	return s.taskRepo.GetAll()
+func (s *TaskService) GetAllTasks(userID string) ([]models.Task, error) {
+	return s.taskRepo.GetAllByUser(userID)
 }
-
 
 // GET TASK BY ID
 func (s *TaskService) GetTaskByID(
@@ -342,7 +192,6 @@ func (s *TaskService) GetTaskByID(
 
 	return s.taskRepo.GetByID(id)
 }
-
 
 // UPDATE TASK STATUS
 // Used by Sprint Board Drag & Drop
@@ -427,8 +276,6 @@ func (s *TaskService) UpdateTask(
 		}
 	}
 
-	
-
 	// Estimated Hours
 	if req.EstimatedHours != nil {
 		task.EstimatedHours = *req.EstimatedHours
@@ -467,7 +314,6 @@ func (s *TaskService) UpdateTask(
 
 	return task, nil
 }
-
 
 // DELETE TASK
 func (s *TaskService) DeleteTask(

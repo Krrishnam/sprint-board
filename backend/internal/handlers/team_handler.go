@@ -56,7 +56,18 @@ func (h *TeamHandler) GetTeams(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, teams)
+	// c.JSON(http.StatusOK, teams)
+	response := make([]dto.TeamResponse, 0, len(teams))
+
+	for _, team := range teams {
+		response = append(response, dto.TeamResponse{
+			ID:          team.ID.String(),
+			Name:        team.Name,
+			Description: team.Description,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // GET /teams/:id
@@ -73,10 +84,13 @@ func (h *TeamHandler) GetTeamByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, team)
+	c.JSON(http.StatusOK, dto.TeamResponse{
+		ID:          team.ID.String(),
+		Name:        team.Name,
+		Description: team.Description,
+	})
 }
 
-// PUT /teams/:id
 func (h *TeamHandler) UpdateTeam(c *gin.Context) {
 
 	id := c.Param("id")

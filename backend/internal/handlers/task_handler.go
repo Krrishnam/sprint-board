@@ -46,7 +46,26 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 
 // GET /tasks
 func (h *TaskHandler) GetTasks(c *gin.Context) {
-	tasks, err := h.taskService.GetAllTasks()
+
+	userID, exists := c.Get("userID")
+
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "user not authenticated",
+		})
+		return
+	}
+
+	userIDString, ok := userID.(string)
+
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "invalid user ID",
+		})
+		return
+	}
+
+	tasks, err := h.taskService.GetAllTasks(userIDString)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

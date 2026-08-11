@@ -31,7 +31,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		RegisterTeamRoutes(api)
 		RegisterProjectRoutes(api)
 		RegisterSprintRoutes(api)
-		RegisterTaskRoutes(api)
+		RegisterTaskRoutes(api,cfg)
 		RegisterBoardRoutes(api)
 		RegisterDashboardRoutes(api)
 	}
